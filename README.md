@@ -23,9 +23,18 @@ Play chess against an AI that learns and adapts to your playing style.
 - Extract the ZIP file
 
 **Step 3:** Run the launcher
-- **macOS**: Double-click `start.command` (or run `./start.sh` in Terminal)
-- **Linux**: Run `./start.sh` in terminal
-- **Windows**: Double-click `start.bat`
+
+**macOS:**
+1. Right-click the `personal-chess-ai` folder
+2. Select "New Terminal at Folder"
+3. Type: `./start.sh` and press Enter
+
+**Linux:**
+1. Open terminal in the project folder
+2. Type: `./start.sh` and press Enter
+
+**Windows:**
+- Double-click `start.bat`
 
 The launcher auto-installs everything and opens your browser!
 
