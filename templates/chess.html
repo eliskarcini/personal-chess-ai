@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess AI - Trained on Your Games</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .game-area {
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .board-container {
+            flex: 1;
+        }
+        
+        .chessboard {
+            width: 480px;
+            height: 480px;
+            border: 3px solid #2c3e50;
+            border-radius: 8px;
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            margin: 0 auto;
+        }
+        
+        .square {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        
+        .square.light {
+            background-color: #f0d9b5;
+        }
+        
+        .square.dark {
+            background-color: #b58863;
+        }
+        
+        .square:hover {
+            box-shadow: inset 0 0 0 3px #3498db;
+        }
+        
+        .square.selected {
+            box-shadow: inset 0 0 0 3px #e74c3c !important;
+        }
+        
+        .square.legal-move {
+            box-shadow: inset 0 0 0 3px #27ae60 !important;
+        }
+        
+        .controls {
+            flex: 1;
+            max-width: 350px;
+        }
+        
+        .panel {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .panel h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+            transition: background 0.2s;
+        }
+        
+        button:hover {
+            background: #2980b9;
+        }
+        
+        button:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+        
+        .ai-button {
+            background: #e74c3c;
+        }
+        
+        .ai-button:hover {
+            background: #c0392b;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 5px 0;
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        
+        .status.info {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .move-history {
+            max-height: 200px;
+            overflow-y: auto;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+        }
+        
+        .analysis {
+            font-size: 12px;
+            background: #e8f4f8;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        
+        .thinking {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Chess AI</h1>
+            <p>Play against your personalized AI trained on your games</p>
+        </div>
+        
+        <div class="game-area">
+            <div class="board-container">
+                <div class="chessboard" id="chessboard"></div>
+                
+                <div class="thinking" id="thinking">
+                    <div class="spinner"></div>
+                    <div>AI is thinking...</div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <div class="panel">
+                    <h3>Game Setup</h3>
+                    <label>Your Name:</label>
+                    <input type="text" id="playerName" value="Human" placeholder="Enter your name">
+                    
+                    <label>Play as:</label>
+                    <select id="playerSide">
+                        <option value="white">White (First Move)</option>
+                        <option value="black">Black (AI Starts)</option>
+                    </select>
+                    
+                    <button onclick="newGame()">🆕 New Game</button>
+                </div>
+                
+                <div class="panel">
+                    <h3>Game Controls</h3>
+                    <button onclick="saveGame()">💾 Manual Save</button>
+                    
+                    <div style="margin-top: 15px;">
+                        <label>Your Rating:</label>
+                        <input type="number" id="playerRating" value="1500" min="800" max="2800">
+                        
+                        <label>AI Strength:</label>
+                        <select id="strengthLevel">
+                            <option value="800">Beginner (800)</option>
+                            <option value="1200">Casual (1200)</option>
+                            <option value="1500" selected>Intermediate (1500)</option>
+                            <option value="1800">Advanced (1800)</option>
+                            <option value="2000">Expert (2000)</option>
+                        </select>
+                        
+                        <label>AI Model:</label>
+                        <select id="modelType">
+                            <option value="true">Hybrid (Style + Engine)</option>
+                            <option value="false">Basic (Pattern Only)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="panel">
+                    <h3>Game Status</h3>
+                    <div id="gameStatus" class="status info">Ready to play!</div>
+                    <div id="turnIndicator">White to move</div>
+                </div>
+                
+                <div class="panel">
+                    <h3>Move History</h3>
+                    <div id="moveHistory" class="move-history">Game not started</div>
+                </div>
+                
+                <div class="panel">
+                    <h3>AI Analysis</h3>
+                    <div id="aiAnalysis" class="analysis">Make a move to see AI analysis</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Chess piece Unicode symbols
+        const pieces = {
+            'K': '♔', 'Q': '♕', 'R': '♖', 'B': '♗', 'N': '♘', 'P': '♙',
+            'k': '♚', 'q': '♛', 'r': '♜', 'b': '♝', 'n': '♞', 'p': '♟'
+        };
+        
+        let selectedSquare = null;
+        let legalMoves = [];
+        let gameState = null;
+        let moveHistory = [];
+        let playerSide = 'white'; // Track which side player is on
+        
+        // Initialize board
+        function initBoard() {
+            const board = document.getElementById('chessboard');
+            board.innerHTML = '';
+            
+            const isFlipped = playerSide === 'black';
+            
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    const square = document.createElement('div');
+                    square.className = `square ${(row + col) % 2 === 0 ? 'light' : 'dark'}`;
+                    
+                    // Standard chess coordinates
+                    let file, rank;
+                    if (isFlipped) {
+                        // 180-degree rotation: rank 1 at top, rank 8 at bottom, files h-a left to right
+                        file = String.fromCharCode(104 - col); // h, g, f, e, d, c, b, a
+                        rank = row + 1; // 1, 2, 3, 4, 5, 6, 7, 8
+                    } else {
+                        // Normal: rank 8 at top, rank 1 at bottom, files a-h left to right  
+                        file = String.fromCharCode(97 + col); // a, b, c, d, e, f, g, h
+                        rank = 8 - row; // 8, 7, 6, 5, 4, 3, 2, 1
+                    }
+                    
+                    const squareName = file + rank;
+                    square.dataset.square = squareName;
+                    square.onclick = () => handleSquareClick(squareName);
+                    board.appendChild(square);
+                }
+            }
+        }
+        
+        // Update board with FEN position
+        function updateBoard(fen) {
+            const squares = document.querySelectorAll('.square');
+            squares.forEach(square => {
+                square.textContent = '';
+                square.classList.remove('selected', 'legal-move');
+            });
+            
+            const position = fen.split(' ')[0];
+            const rows = position.split('/');
+            
+            // Place pieces according to FEN (rank 8 first, rank 1 last)
+            for (let rankIndex = 0; rankIndex < 8; rankIndex++) {
+                const rank = 8 - rankIndex; // rank 8, 7, 6, ..., 1
+                let fileIndex = 0;
+                
+                for (let char of rows[rankIndex]) {
+                    if (isNaN(char)) {
+                        // It's a piece
+                        const file = String.fromCharCode(97 + fileIndex); // a, b, c, ..., h
+                        const squareName = file + rank;
+                        
+                        const square = document.querySelector(`[data-square="${squareName}"]`);
+                        if (square) {
+                            square.textContent = pieces[char] || char;
+                        }
+                        fileIndex++;
+                    } else {
+                        // It's a number of empty squares
+                        fileIndex += parseInt(char);
+                    }
+                }
+            }
+        }
+        
+        // Handle square clicks
+        function handleSquareClick(square) {
+            if (selectedSquare === square) {
+                // Deselect
+                selectedSquare = null;
+                clearHighlights();
+                return;
+            }
+            
+            if (selectedSquare) {
+                const move = selectedSquare + square;
+                
+                // Check if this is a pawn promotion
+                if (isPawnPromotion(selectedSquare, square)) {
+                    showPromotionDialog(selectedSquare, square);
+                    return;
+                }
+                
+                // Check if it's a legal move
+                if (legalMoves.some(legalMove => legalMove.startsWith(move))) {
+                    makeMove(move);
+                    return;
+                }
+            }
+            
+            // Select new square
+            selectedSquare = square;
+            highlightSquare(square);
+            showLegalMoves(square);
+        }
+        
+        // Check if move is pawn promotion
+        function isPawnPromotion(fromSquare, toSquare) {
+            const fromRank = parseInt(fromSquare[1]);
+            const toRank = parseInt(toSquare[1]);
+            const piece = document.querySelector(`[data-square="${fromSquare}"]`).textContent;
+            
+            // White pawn moving to 8th rank or Black pawn moving to 1st rank
+            return (piece === '♙' && fromRank === 7 && toRank === 8) || 
+                   (piece === '♟' && fromRank === 2 && toRank === 1);
+        }
+        
+        // Show promotion dialog
+        function showPromotionDialog(fromSquare, toSquare) {
+            const isWhite = document.querySelector(`[data-square="${fromSquare}"]`).textContent === '♙';
+            const pieces = isWhite ? 
+                [['q', '♕', 'Queen'], ['r', '♖', 'Rook'], ['b', '♗', 'Bishop'], ['n', '♘', 'Knight']] :
+                [['q', '♛', 'Queen'], ['r', '♜', 'Rook'], ['b', '♝', 'Bishop'], ['n', '♞', 'Knight']];
+            
+            let html = '<div id="promotion-dialog" style="text-align: center; padding: 20px; background: white; border: 2px solid #333; border-radius: 10px; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">';
+            html += '<h3>Choose promotion piece:</h3>';
+            html += '<div style="display: flex; gap: 10px; justify-content: center;">';
+            
+            pieces.forEach(([letter, symbol, name]) => {
+                html += `<button onclick="promoteToPiece('${fromSquare}${toSquare}${letter}')" style="font-size: 36px; padding: 10px; border: 2px solid #333; background: #f0f0f0; cursor: pointer; border-radius: 5px;" title="${name}">${symbol}</button>`;
+            });
+            
+            html += '</div>';
+            html += '<button onclick="cancelPromotion()" style="margin-top: 10px; padding: 5px 15px;">Cancel</button>';
+            html += '</div>';
+            html += '<div id="promotion-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999;" onclick="cancelPromotion()"></div>';
+            
+            document.body.insertAdjacentHTML('beforeend', html);
+        }
+        
+        // Promote to selected piece
+        function promoteToPiece(move) {
+            const dialog = document.getElementById('promotion-dialog');
+            const overlay = document.getElementById('promotion-overlay');
+            if (dialog) dialog.remove();
+            if (overlay) overlay.remove();
+            
+            console.log('Promoting with move:', move);
+            makeMove(move);
+        }
+        
+        // Cancel promotion
+        function cancelPromotion() {
+            const dialog = document.getElementById('promotion-dialog');
+            const overlay = document.getElementById('promotion-overlay');
+            if (dialog) dialog.remove();
+            if (overlay) overlay.remove();
+            
+            selectedSquare = null;
+            clearHighlights();
+        }
+        
+        // Highlight selected square
+        function highlightSquare(square) {
+            clearHighlights();
+            const element = document.querySelector(`[data-square="${square}"]`);
+            if (element) element.classList.add('selected');
+        }
+        
+        // Show legal moves from selected square
+        function showLegalMoves(fromSquare) {
+            const possibleMoves = legalMoves.filter(move => move.startsWith(fromSquare));
+            possibleMoves.forEach(move => {
+                const toSquare = move.slice(2);
+                const element = document.querySelector(`[data-square="${toSquare}"]`);
+                if (element) element.classList.add('legal-move');
+            });
+        }
+        
+        // Clear all highlights
+        function clearHighlights() {
+            document.querySelectorAll('.square').forEach(square => {
+                square.classList.remove('selected', 'legal-move');
+            });
+        }
+        
+        // Make a move
+        async function makeMove(move) {
+            try {
+                const rating = parseInt(document.getElementById('playerRating').value);
+                const useHybrid = document.getElementById('modelType').value === 'true';
+                const strengthLevel = parseInt(document.getElementById('strengthLevel').value);
+                
+                const response = await fetch('/make_move', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        move: move,
+                        rating: rating,
+                        use_hybrid: useHybrid,
+                        strength_level: strengthLevel
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateBoard(result.fen);
+                    legalMoves = result.legal_moves || [];
+                    gameState = result.game_state;
+                    moveHistory.push(move);
+                    
+                    updateGameStatus(result.game_state);
+                    updateMoveHistory();
+                    clearHighlights();
+                    selectedSquare = null;
+                    
+                    // Handle AI response
+                    if (result.ai_response) {
+                        setTimeout(() => {
+                            updateBoard(result.ai_response.fen);
+                            gameState = result.ai_response.game_state;
+                            legalMoves = result.legal_moves || [];
+                            moveHistory.push(result.ai_response.move);
+                            
+                            updateGameStatus(result.ai_response.game_state);
+                            updateMoveHistory();
+                            updateAIAnalysis(result.ai_response.analysis);
+                            
+                            showStatus(`AI played: ${result.ai_response.move} (${result.ai_response.thinking_time.toFixed(2)}s)`, 'info');
+                        }, 500); // Small delay for better UX
+                    }
+                    
+                    // Show auto-save message if game ended
+                    if (result.auto_saved) {
+                        if (result.auto_saved.success) {
+                            showStatus(`Game completed and saved: ${result.auto_saved.message}`, 'info');
+                        }
+                    }
+                } else {
+                    showStatus(result.error, 'error');
+                }
+            } catch (error) {
+                showStatus('Error making move: ' + error.message, 'error');
+            }
+        }
+        
+        // Get AI move
+        async function getAIMove() {
+            const aiBtn = document.getElementById('aiMoveBtn');
+            const thinking = document.getElementById('thinking');
+            
+            aiBtn.disabled = true;
+            thinking.style.display = 'block';
+            
+            try {
+                const rating = parseInt(document.getElementById('playerRating').value);
+                const useHybrid = document.getElementById('modelType').value === 'true';
+                
+                const response = await fetch('/ai_move', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        rating: rating,
+                        use_hybrid: useHybrid
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateBoard(result.move_result.fen);
+                    legalMoves = result.legal_moves || [];
+                    gameState = result.move_result.game_state;
+                    moveHistory.push(result.ai_move);
+                    
+                    updateGameStatus(result.move_result.game_state);
+                    updateMoveHistory();
+                    updateAIAnalysis(result.analysis);
+                    
+                    showStatus(`AI played: ${result.ai_move} (${result.thinking_time.toFixed(2)}s)`, 'info');
+                } else {
+                    showStatus(result.error, 'error');
+                }
+            } catch (error) {
+                showStatus('Error getting AI move: ' + error.message, 'error');
+            } finally {
+                thinking.style.display = 'none';
+                aiBtn.disabled = false;
+            }
+        }
+        
+        // Start new game
+        async function newGame() {
+            try {
+                const playerName = document.getElementById('playerName').value || 'Human';
+                const selectedSide = document.getElementById('playerSide').value;
+                playerSide = selectedSide; // Update global variable
+                
+                // Reinitialize board with correct orientation
+                initBoard();
+                
+                const response = await fetch('/new_game', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        player_side: selectedSide,
+                        player_name: playerName
+                    })
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateBoard(result.fen);
+                    legalMoves = result.legal_moves || [];
+                    gameState = result.game_state;
+                    moveHistory = [];
+                    
+                    updateGameStatus(result.game_state);
+                    updateMoveHistory();
+                    clearHighlights();
+                    selectedSquare = null;
+                    
+                    document.getElementById('aiAnalysis').textContent = 'Game started!';
+                    
+                    if (result.ai_first_move) {
+                        showStatus(`AI (White) played: ${result.ai_first_move}`, 'info');
+                        moveHistory.push(result.ai_first_move);
+                        updateMoveHistory();
+                    }
+                    
+                    showStatus(`New game started! You are playing as ${selectedSide}`, 'info');
+                }
+            } catch (error) {
+                showStatus('Error starting new game: ' + error.message, 'error');
+            }
+        }
+        
+        // Save game
+        async function saveGame() {
+            const filename = `game_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.pgn`;
+            
+            try {
+                const response = await fetch('/save_game', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({filename: filename})
+                });
+                
+                const result = await response.json();
+                showStatus(result.message, 'info');
+            } catch (error) {
+                showStatus('Error saving game: ' + error.message, 'error');
+            }
+        }
+        
+        // Update game status display
+        function updateGameStatus(state) {
+            const statusEl = document.getElementById('gameStatus');
+            const turnEl = document.getElementById('turnIndicator');
+            
+            if (state.status === 'checkmate') {
+                statusEl.textContent = `Checkmate! ${state.winner} wins!`;
+                statusEl.className = 'status warning';
+                turnEl.textContent = 'Game Over';
+            } else if (state.status === 'check') {
+                statusEl.textContent = `${state.turn} is in check!`;
+                statusEl.className = 'status warning';
+                turnEl.textContent = `${state.turn} to move`;
+            } else if (state.status.includes('draw')) {
+                statusEl.textContent = `Draw by ${state.status.replace('_', ' ')}`;
+                statusEl.className = 'status info';
+                turnEl.textContent = 'Game Over';
+            } else {
+                statusEl.textContent = 'Game in progress';
+                statusEl.className = 'status info';
+                turnEl.textContent = `${state.turn} to move`;
+            }
+        }
+        
+        // Update move history
+        function updateMoveHistory() {
+            const historyEl = document.getElementById('moveHistory');
+            if (moveHistory.length === 0) {
+                historyEl.textContent = 'No moves yet';
+                return;
+            }
+            
+            let html = '';
+            for (let i = 0; i < moveHistory.length; i += 2) {
+                const moveNum = Math.floor(i / 2) + 1;
+                const whiteMove = moveHistory[i];
+                const blackMove = moveHistory[i + 1] || '';
+                html += `<div>${moveNum}. ${whiteMove} ${blackMove}</div>`;
+            }
+            historyEl.innerHTML = html;
+        }
+        
+        // Update AI analysis
+        function updateAIAnalysis(analysis) {
+            const analysisEl = document.getElementById('aiAnalysis');
+            
+            if (analysis.balance_weight !== undefined) {
+                const styleWeight = (analysis.balance_weight * 100).toFixed(1);
+                const engineWeight = ((1 - analysis.balance_weight) * 100).toFixed(1);
+                
+                analysisEl.innerHTML = `
+                    <strong>Model:</strong> ${analysis.model}<br>
+                    <strong>Style Weight:</strong> ${styleWeight}%<br>
+                    <strong>Engine Weight:</strong> ${engineWeight}%<br>
+                    <strong>Rating Bin:</strong> ${analysis.rating_bin}<br>
+                    <strong>Best Move:</strong> ${analysis.best_move}
+                `;
+            } else {
+                analysisEl.innerHTML = `
+                    <strong>Model:</strong> ${analysis.model}<br>
+                    <strong>Best Move:</strong> ${analysis.best_move}
+                `;
+            }
+        }
+        
+        // Show status message
+        function showStatus(message, type = 'info') {
+            const statusEl = document.getElementById('gameStatus');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+        }
+        
+        // Initialize the game
+        document.addEventListener('DOMContentLoaded', function() {
+            playerSide = 'white'; // Default to white
+            initBoard();
+            newGame();
+        });
+    </script>
+</body>
+</html>
