@@ -1,4 +1,4 @@
-# 🎮 Personal Chess AI
+# ♟️ Personal Chess AI
 
 Play chess against an AI that learns and adapts to your playing style.
 
@@ -110,8 +110,6 @@ This project is actively being developed! Upcoming features:
 - **📊 Adaptive Opponents**: AI that adapts to your strengths and weaknesses over time
 - **📚 Opening Book**: Learn and play your favorite openings
 - **🔍 Game Analysis**: Post-game analysis showing mistakes and suggested improvements
-
-The foundation is here - the AI already saves your games and will soon learn from them to create a truly personalized chess opponent that plays like you!
 
 ## License
 
