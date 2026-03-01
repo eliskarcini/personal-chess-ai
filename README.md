@@ -76,17 +76,14 @@ pip install -r requirements.txt
 python app.py
 ```
 
-### Play!
-
-Open your browser: **http://localhost:8080**
 
 ## How It Works
 
 The AI uses a hybrid approach:
 - **80% Stockfish**: Strong tactical play
-- **20% Neural Network**: Human-like style and personality
+- **20% Neural Network**: Human-like style
 
-The neural network is trained on my chess games and at the time imitates my game style.
+The neural network is trained on my chess games and at this time imitates my playing style.
 
 ## Project Structure
 
