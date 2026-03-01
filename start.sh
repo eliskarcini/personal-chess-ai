@@ -25,14 +25,13 @@ if ! command -v stockfish &> /dev/null; then
     
     if [[ "$OSTYPE" == "darwin"* ]]; then
         # macOS
-        if command -v brew &> /dev/null; then
-            echo "Installing Stockfish via Homebrew..."
-            brew install stockfish
-        else
-            echo "❌ Homebrew not found. Please install Stockfish manually:"
-            echo "   brew install stockfish"
-            echo "   Or download from: https://stockfishchess.org/download/"
-            exit 1
+        if ! command -v brew &> /dev/null; then
+            echo "Installing Homebrew..."
+            /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        fi
+        
+        echo "Installing Stockfish via Homebrew..."
+        brew install stockfish
         fi
     elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
         # Linux
